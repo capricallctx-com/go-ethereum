@@ -97,7 +97,7 @@ var (
 			Description: "Developer utility version of the EVM (Ethereum Virtual Machine) that is capable of running bytecode snippets within a configurable environment and execution mode.",
 		},
 		{
-			BinaryName:  "geth",
+			BinaryName:  "tankerd",
 			Description: "Ethereum CLI client.",
 		},
 		{

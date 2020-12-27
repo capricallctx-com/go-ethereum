@@ -63,4 +63,9 @@ var (
 	// ErrIntrinsicGas is returned if the transaction is specified to use less gas
 	// than required to start the invocation.
 	ErrIntrinsicGas = errors.New("intrinsic gas too low")
+
+	// tanker specific error codes
+	ErrTankerInvalidCargo = errors.New("data block on the tx invalid (cargo) - must be recognized type")
+	ErrTankerCargoTooBig  = errors.New("cargo is larger than supported currently - rejected")
+	ErrTankerCargoBadPem  = errors.New("cargo is marked as a public key - unable to validate.  rejected")
 )

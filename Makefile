@@ -12,10 +12,12 @@ GOBIN = ./build/bin
 GO ?= latest
 GORUN = env GO111MODULE=on go run
 
-geth:
+tankerd:
 	$(GORUN) build/ci.go install ./cmd/geth
+	rm -f $(GOBIN)/tankerd
+	mv $(GOBIN)/geth $(GOBIN)/tankerd
 	@echo "Done building."
-	@echo "Run \"$(GOBIN)/geth\" to launch geth."
+	@echo "Run \"$(GOBIN)/tankerd\" to launch tankerd."
 
 all:
 	$(GORUN) build/ci.go install

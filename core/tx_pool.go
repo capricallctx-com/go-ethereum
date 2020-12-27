@@ -18,6 +18,7 @@ package core
 
 import (
 	"errors"
+	"fmt"
 	"math"
 	"math/big"
 	"sort"
@@ -527,7 +528,11 @@ func (pool *TxPool) validateTx(tx *types.Transaction, local bool) error {
 		return ErrNegativeValue
 	}
 	// Ensure the transaction doesn't exceed the current block limit gas.
+
 	if pool.currentMaxGas < tx.Gas() {
+		log.Info(fmt.Sprintf("pool.currentMaxGas %d", pool.currentMaxGas))
+		log.Info(fmt.Sprintf("tx.Get()           %d", tx.Gas()))
+
 		return ErrGasLimit
 	}
 	// Make sure the transaction is signed properly
@@ -555,6 +560,7 @@ func (pool *TxPool) validateTx(tx *types.Transaction, local bool) error {
 		return err
 	}
 	if tx.Gas() < intrGas {
+		log.Info(fmt.Sprintf("rejecting tx - tx.gas (%d) < intrGas (%d", tx.Gas(), intrGas))
 		return ErrIntrinsicGas
 	}
 	return nil
@@ -1171,6 +1177,7 @@ func (pool *TxPool) reset(oldHead, newHead *types.Header) {
 	pool.currentState = statedb
 	pool.pendingNonces = newTxNoncer(statedb)
 	pool.currentMaxGas = newHead.GasLimit
+	log.Info(fmt.Sprintf("Setting max gas to %d", newHead.GasLimit))
 
 	// Inject any transactions discarded due to reorgs
 	log.Debug("Reinjecting stale transactions", "count", len(reinject))

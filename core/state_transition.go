@@ -17,8 +17,10 @@
 package core
 
 import (
+	"crypto/x509"
+	"encoding/pem"
 	"fmt"
-	"math"
+	"github.com/ethereum/go-ethereum/log"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -104,41 +106,89 @@ func (result *ExecutionResult) Revert() []byte {
 	return common.CopyBytes(result.ReturnData)
 }
 
+func parseTankerCargo(data []byte) (bool, uint64) {
+	var lengthCargo uint64
+	lengthCargo = uint64(len(data))
+	// header must be T (tanker)
+	if data[0] != 0x54 {
+		return false, lengthCargo
+	}
+	if data[1] == params.CargoPublicKey {
+		log.Info("Checking PK cargo")
+		fingerprintLength := data[2]
+		fmt.Println("Fingerprint length" + string(fingerprintLength))
+		fingerprint := data[3 : 3+fingerprintLength]
+		fmt.Println(fingerprint)
+		log.Info(string(data[3+fingerprintLength:]))
+		block, _ := pem.Decode([]byte(data[3+fingerprintLength:]))
+		if block == nil {
+			log.Info("Rejecting PK Cargo - unable to parse the PEM")
+			return false, lengthCargo
+		}
+		_, contentErr := x509.ParsePKIXPublicKey(block.Bytes)
+		if contentErr != nil {
+			log.Info("Rejecting PK Cargo - key is invalid")
+			return false, lengthCargo
+		}
+		return true, lengthCargo
+	}
+
+	if data[1] == params.CargoClaim {
+		log.Info("Checking claim cargo")
+		// nothing bigger than haya today
+		if data[2] > params.CargoClaimHaya {
+			log.Info("Rejecting claim Cargo - invalid claim type")
+			return false, lengthCargo
+		}
+		// 64 bytes plus preamble
+		// 0x54 0x02 <type> <data>
+		if len(data) > 64+1+1+1 {
+			log.Info("Rejecting claim Cargo - claim is too long")
+			return false, lengthCargo
+		}
+		// meh - seems okay, it can be any text, including doublebytes
+		return true, lengthCargo
+	}
+	if data[1] == params.CargoAttest {
+		log.Info("Checking claim cargo")
+		// nothing bigger than haya today
+		if data[2] > params.CargoClaimHaya {
+			log.Info("Rejecting claim Cargo - invalid claim type")
+			return false, lengthCargo
+		}
+		// 64 bytes plus preamble
+		if len(data) > 64+1+1+params.CargoAddressSize {
+			log.Info("Rejecting claim Cargo - claim is too long")
+			return false, lengthCargo
+		}
+		// meh - seems okay, it can be any text, including doublebytes
+		return true, lengthCargo
+	}
+
+	// no idea what this is
+	return false, lengthCargo
+}
+
 // IntrinsicGas computes the 'intrinsic gas' for a message with the given data.
 func IntrinsicGas(data []byte, contractCreation, isHomestead bool, isEIP2028 bool) (uint64, error) {
 	// Set the starting gas for the raw transaction
-	var gas uint64
-	if contractCreation && isHomestead {
-		gas = params.TxGasContractCreation
-	} else {
-		gas = params.TxGas
-	}
+	var diesel uint64
+	// ad hoc contracts don't exist in tanker
+	diesel = params.TxGas
 	// Bump the required gas by the amount of transactional data
 	if len(data) > 0 {
-		// Zero and non-zero bytes are priced differently
-		var nz uint64
-		for _, byt := range data {
-			if byt != 0 {
-				nz++
-			}
+		valid, cargoLength := parseTankerCargo(data)
+		if !valid {
+			// no idea what this is, can't estimate cost
+			return 0, ErrTankerInvalidCargo
 		}
-		// Make sure we don't exceed uint64 for all data combinations
-		nonZeroGas := params.TxDataNonZeroGasFrontier
-		if isEIP2028 {
-			nonZeroGas = params.TxDataNonZeroGasEIP2028
-		}
-		if (math.MaxUint64-gas)/nonZeroGas < nz {
-			return 0, ErrGasUintOverflow
-		}
-		gas += nz * nonZeroGas
-
-		z := uint64(len(data)) - nz
-		if (math.MaxUint64-gas)/params.TxDataZeroGas < z {
-			return 0, ErrGasUintOverflow
-		}
-		gas += z * params.TxDataZeroGas
+		containersInCargo := cargoLength % params.TankerContainerSize
+		diesel += containersInCargo * params.TankerTariffKB
 	}
-	return gas, nil
+	if diesel > params.TankerMaxTariff {
+		diesel = params.TankerMaxTariff
+	}
+	return diesel, nil
 }
 
 // NewStateTransition initialises and returns a new state transition object.
