@@ -22,7 +22,29 @@ Current Cargo
 |   `CargoClaim`    | 0x02 - Claim an email or social media address for this account - will appear in indices.  Type tag is followed immediately by a subtype and up to 64 bytes of data.   Subtypes are 0x00 (email), 0x01 Twitter, 0x02 Hayachat. |
 |  `CargoAttest`   | 0x03 - Attest to an address being owned by an account (improves it's score).  Followed by a claim subtype, an address, and the tag itself (up to 64 bytes)         |
 
+- CargoPublicKey
 
+In raw format, this is:
+
+```bigquery
+0x5401001677696c6c69616d6c6f70657a407961686f6f2e636f6d2d2d2d2d2d424547494e205055424c4943204b45592d2d2d2d2d0a4d494943496a414e42676b71686b6947397730424151454641414f43416738414d49494343674b43416745416b3070766b362f355351707a4151756c4e6874750a4d785a72634b5a6f37723368742f585578494d5132686935596663514b2b7059526d44744e646232493770316661672b723656664a66736a344d36656b5432330a656c674859733077355a357961683848654b4e7a69614948587935396d47567a342b36796150765035527a4c7841394c714777592b36644c6664577a6d4c71330a765a3357496b53497452316a50544642796c584b5965574f7a446a49415a59586f3973484f2f7657506972662f6750324539504f424363454e5a763965786b6b0a356939506d6d7a2f636c2b4b71586945385768624956567642786d7070514541363153373737584b786878375736485152596b4c3263466c54397a39747434680a554d4e716d4a476475556d4d4b646931797872735a306e6146316839526b61506c3047465666694264326a7573494267484241527059625757373341786265720a49393858694143743862664d596a39674351506d2b6a6955667758357379476657626b4c4a636d745953754e59465937332f43776f4d6b564e2f4a37394c59370a77786755344c4a5259684e384275674d4345595751772f4948496833516e682f37305176536a6e446f6e336f69565a66544f754631734347487370716375522f0a524d30692f4a66476430526948645250576f4e433836565637764866664570564f514c416e48416b4f6153616336756d2f687074752f646e6f42514b4b4535650a77523176747a4a6e4d6734436c30654b6b6e2b6d2f62674548797a77696a676269353437344e4955453470494854394b5159354c6d6f4661456573776c6d72780a506e564d59585273386a307553686257636651595a5373627a6751426a457352585739304272626e6e4b61744f7169412b3764756f4a75515a647941464850590a444a6d71424563625357767945434b6563517371663173434177454141513d3d0a2d2d2d2d2d454e44205055424c4943204b45592d2d2d2d2d0a
+```
+Note that organizations may use a single rotating key for records preservation (i.e. - the message may be decrypted by the SMTP or XMPP gateway).
+For this case, the fingerprint is at an org level (i.e. - 'example.com'). To parse the data - the fields are
+
+|    Byte   | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| :-----------: | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|  0x00   | tanker tag (0x54) |
+|  0x01   | Cargo type (0x01 - public key) |
+|  0x02   | Key type hint (0x00 is RSA) |
+|  0x03   | Fingerprint length - tag to identify such as an email address, GPG label, or social network address |
+|  0x04   | The fingerprint itself, limited to 64 characters |
+|  0x04+fingerprint length   | The public key, this is is parsed for validity by nodes |
+
+|   `CargoClaim`    | 0x02 - Claim an email or social media address for this account - will appear in indices.  Type tag is followed immediately by a subtype and up to 64 bytes of data.   Subtypes are 0x00 (email), 0x01 Twitter, 0x02 Hayachat. |
+|  `CargoAttest`   | 0x03 - Attest to an address being owned by an account (improves it's score).  Followed by a claim subtype, an address, and the tag itself (up to 64 bytes)         |
+
+![img.png](img.png)
 
 [![API Reference](
 https://camo.githubusercontent.com/915b7be44ada53c290eb157634330494ebe3e30a/68747470733a2f2f676f646f632e6f72672f6769746875622e636f6d2f676f6c616e672f6764646f3f7374617475732e737667

@@ -91,6 +91,7 @@ func newFreezer(datadir string, namespace string) (*freezer, error) {
 		writeMeter = metrics.NewRegisteredMeter(namespace+"ancient/write", nil)
 		sizeGauge  = metrics.NewRegisteredGauge(namespace+"ancient/size", nil)
 	)
+	log.Debug("New Freezer created....")
 	// Ensure the datadir is not a symbolic link if it exists.
 	if info, err := os.Lstat(datadir); !os.IsNotExist(err) {
 		if info.Mode()&os.ModeSymlink != 0 {
@@ -112,6 +113,7 @@ func newFreezer(datadir string, namespace string) (*freezer, error) {
 		trigger:      make(chan chan struct{}),
 		quit:         make(chan struct{}),
 	}
+	log.Info(fmt.Sprintf("thresh %x", freezer.threshold))
 	for name, disableSnappy := range freezerNoSnappy {
 		table, err := newTable(datadir, name, readMeter, writeMeter, sizeGauge, disableSnappy)
 		if err != nil {
@@ -124,6 +126,7 @@ func newFreezer(datadir string, namespace string) (*freezer, error) {
 		freezer.tables[name] = table
 	}
 	if err := freezer.repair(); err != nil {
+		log.Info(fmt.Sprintf("repair thresh %x", freezer.threshold))
 		for _, table := range freezer.tables {
 			table.Close()
 		}
@@ -131,6 +134,7 @@ func newFreezer(datadir string, namespace string) (*freezer, error) {
 		return nil, err
 	}
 	log.Info("Opened ancient database", "database", datadir)
+	log.Info(fmt.Sprintf("thresh %x", freezer.threshold))
 	return freezer, nil
 }
 
@@ -302,7 +306,8 @@ func (f *freezer) freeze(db ethdb.KeyValueStore) {
 		}
 		number := ReadHeaderNumber(nfdb, hash)
 		threshold := atomic.LoadUint64(&f.threshold)
-
+		log.Debug(fmt.Sprintf("Block Number %x", *number))
+		log.Debug(fmt.Sprintf("Threshold    %x", threshold))
 		switch {
 		case number == nil:
 			log.Error("Current full block number unavailable", "hash", hash)

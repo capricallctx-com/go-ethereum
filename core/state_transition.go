@@ -115,12 +115,14 @@ func parseTankerCargo(data []byte) (bool, uint64) {
 	}
 	if data[1] == params.CargoPublicKey {
 		log.Info("Checking PK cargo")
-		fingerprintLength := data[2]
-		fmt.Println("Fingerprint length" + string(fingerprintLength))
-		fingerprint := data[3 : 3+fingerprintLength]
+		bomHint := data[2]
+		log.Info(fmt.Sprintf("BOM hint is %x", bomHint))
+		fingerprintLength := data[3]
+		log.Info(fmt.Sprintf("Fingerprint length %x", fingerprintLength))
+		fingerprint := data[4 : 4+fingerprintLength]
 		fmt.Println(fingerprint)
-		log.Info(string(data[3+fingerprintLength:]))
-		block, _ := pem.Decode([]byte(data[3+fingerprintLength:]))
+		log.Info(string(data[4+fingerprintLength:]))
+		block, _ := pem.Decode([]byte(data[4+fingerprintLength:]))
 		if block == nil {
 			log.Info("Rejecting PK Cargo - unable to parse the PEM")
 			return false, lengthCargo
@@ -130,6 +132,7 @@ func parseTankerCargo(data []byte) (bool, uint64) {
 			log.Info("Rejecting PK Cargo - key is invalid")
 			return false, lengthCargo
 		}
+		log.Info("Accepted cargo - sending TRUE")
 		return true, lengthCargo
 	}
 

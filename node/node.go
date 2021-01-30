@@ -564,12 +564,14 @@ func (n *Node) OpenDatabaseWithFreezer(name string, cache, handles int, freezer,
 	if n.state == closedState {
 		return nil, ErrNodeStopped
 	}
-
+	log.Info("OpenDatabaseWithFreezer....")
 	var db ethdb.Database
 	var err error
 	if n.config.DataDir == "" {
+		log.Info("OpenDatabaseWithFreezer.... memory")
 		db = rawdb.NewMemoryDatabase()
 	} else {
+		log.Info(name)
 		root := n.ResolvePath(name)
 		switch {
 		case freezer == "":
@@ -577,10 +579,13 @@ func (n *Node) OpenDatabaseWithFreezer(name string, cache, handles int, freezer,
 		case !filepath.IsAbs(freezer):
 			freezer = n.ResolvePath(freezer)
 		}
+		log.Info("OpenDatabaseWithFreezer.... new db")
+
 		db, err = rawdb.NewLevelDBDatabaseWithFreezer(root, cache, handles, freezer, namespace)
 	}
 
 	if err == nil {
+		log.Info("OpenDatabaseWithFreezer.... existing wrapped...")
 		db = n.wrapDatabase(db)
 	}
 	return db, err
