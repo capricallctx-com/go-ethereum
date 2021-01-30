@@ -33,6 +33,16 @@ const (
 	TankerMaxTariff       uint64 = 20000 // max tariff per record
 	TankerContainerSize   uint64 = 1024  // one kb
 	CargoPublicKey        byte   = 0x01
+	// hints for the cargo to help use - apps need to convert from well known formats to something they can use if
+	// not usable as is.
+	// supported today
+	CargoPublicKeyRSA  		byte   = 0x00	// simple, common, default - Hayachat, Skyalos, S/MIME, others
+	// reserved
+	CargoPublicKeyGPG  		byte   = 0x01	// common ElGamal implementation (only I know of), GPG/PGP
+	CargoPublicKeyECDSA		byte   = 0x02	// Bitcoin, Ethereum, most Blockchains, not a PEM
+	CargoPublicKeyECDH		byte   = 0x03	// Signal and Facebook products
+	CargoPublicKeyDSS		byte   = 0x04	// US Government developed algorithm, unpopular (see Sony PlayStation hack)
+	// other types are reserved (to 0xff)
 	CargoClaim            byte   = 0x02
 	CargoAddressSize      int    = 43
 	CargoClaimEmail       byte   = 0x00
